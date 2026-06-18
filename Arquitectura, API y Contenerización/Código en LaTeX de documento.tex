@@ -1,0 +1,395 @@
+\documentclass[12pt,journal,onecolumn]{IEEEtran} 
+\usepackage[spanish, es-tabla]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{letterpaper, margin=1in}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{url}
+\usepackage{hyperref}
+
+\usepackage{newtxtext,newtxmath}
+
+\usepackage{tabularx}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} 
+\cfoot{\thepage} 
+\renewcommand{\headrulewidth}{0pt} 
+\renewcommand{\footrulewidth}{0pt} 
+
+\makeatletter
+\let\ps@headings\ps@fancy
+\let\ps@plain\ps@fancy
+\makeatother
+
+\definecolor{codegreen}{rgb}{0,0.5,0}
+\definecolor{codegray}{rgb}{0.4,0.4,0.4}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.98,0.98,0.96}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{blue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=8pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{lightgray}
+}
+\lstset{style={mystyle}}
+
+\begin{document}
+
+\begin{titlepage}
+    \thispagestyle{empty} 
+    \centering
+    \vspace*{0.5cm}
+    {\large\bfseries UNIVERSIDAD TÉCNICA ESTATAL DE QUEVEDO} \\[0.4cm]
+    {\large FACULTAD DE CIENCIAS DE LA COMPUTACIÓN Y DISEÑO DIGITAL} \\[0.4cm]
+    {\large CARRERA DE SOFTWARE} \\[1.5cm]
+    
+    \begin{center}
+        \nopagebreak
+    \end{center}
+    \vspace{0.5cm}
+    
+    {\Large\bfseries TRABAJO DE INVESTIGACIÓN PRE-TESIS} \\[0.6cm]
+    {\Large\bfseries Gestión de aula 03} \\[1.2cm]
+    
+    {\large\bfseries TEMA DE INVESTIGACIÓN:} \\[0.3cm]
+    {\large\bfseries\MakeUppercase{Diseño, Implementación y Despliegue de una Arquitectura Distribuida Basada en Microservicios Independientes con Orquestación Multi-contenedor, Autenticación Descentralizada JWT y Seguridad Perimetral mediante API Gateway}}} \\[2.2cm]
+    
+    \begin{flushleft}
+        \large
+        \textbf{AUTORES:} \\
+        - Luna Mora Ernesto Gregory \\
+        - Cando Moreno Robinson Rodrigo \\
+        - Pacheco Cárdenas Cristhian Daniel \\[0.8cm]
+        \textbf{DOCENTE DIRECTOR:} \\
+        - Ing. Guerrero Ulloa Gleiston Cicerón, Msc. \\[1.2cm]
+    \end{flushleft}
+    
+    \vfill
+    {\large Quevedo - Los Ríos - Ecuador} \\
+    {\large 2026}
+\end{titlepage}
+
+\newpage
+\pagenumbering{arabic} 
+
+\begin{center}
+    \section*\textbf{{Resumen}}
+\end{center}
+El presente artículo de investigación expone el marco teórico-analítico y metodológico que sustenta el desarrollo de un sistema distribuido fundamentado en el paradigma de microservicios. En este estudio se aborda rigurosamente la deconstrucción de los sistemas monolíticos acoplados, transitando hacia un modelo de topología descentralizada gobernado por el patrón \textit{Database per Service}. Se examina con precisión ingenieril cómo la virtualización a nivel de sistema operativo provista por el motor Docker viabiliza el aislamiento formal de dependencias y la homogeneidad operativa de los entornos de ejecución. Asimismo, se evalúa la optimización formal de imágenes mediante construcciones multi-etapa (\textit{Multi-stage Builds}) como estrategia crítica para mitigar la superficie de ataque perimetral y minimizar el almacenamiento subyacente. En el ámbito de la seguridad y el gobierno de red, se analiza la implementación de Nginx actuando como un API Gateway, el cual centraliza el enrutamiento inverso y abate el overhead criptográfico del sistema mediante la validación estatuaria y asíncrona de JSON Web Tokens (JWT). Finalmente, se modela la resiliencia sistémica ante fallos en cascada mediante la incorporación del patrón \textit{Circuit Breaker}, concluyendo con la evaluación de estrategias operativas para la escalabilidad elástica horizontal dentro de un entorno de orquestación local administrado con Docker Compose.
+
+\vspace{0.5cm}
+\textbf{Palabras Clave:} Microservicios, Database per Service, Contenerización, Multi-stage Build, API Gateway, JSON Web Tokens, Circuit Breaker, Resiliencia.
+
+\newpage
+
+\section{\textbf{Introducción}}
+La evolución contemporánea en la ingeniería de software y la computación distribuida exige el diseño de arquitecturas empresariales de alta disponibilidad, capaces de garantizar un escalado horizontal elástico, aislamiento estricto de fallos y un ciclo de vida de despliegue continuo libre de fricciones operativas. Históricamente, las arquitecturas de naturaleza monolítica aglutinaban la totalidad de los dominios de negocio, capas de presentación y componentes de persistencia en un único artefacto binario acoplado. Si bien este enfoque simplificaba las fases iniciales de desarrollo, la maduración del software revelaba severas patologías estructurales, caracterizadas por un acoplamiento aferente y eferente extremo, deudas técnicas insostenibles y el bloqueo mutuo de hilos de ejecución ante transacciones concurrentes sobre bases de datos centralizadas.
+
+Para mitigar este escenario de degradación arquitectónica, se promueve la adopción sistemática de las arquitecturas orientadas a microservicios. Este paradigma de diseño postula la deconstrucción del sistema global en unidades funcionales autónomas y altamente cohesionadas, delimitadas formalmente por contextos acotados (\textit{Bounded Contexts}) bajo los principios de Diseño Guiado por el Dominio (\textit{Domain-Driven Design}). Estas entidades interactúan de manera exclusiva mediante interfaces programáticas (APIs) agnósticas al lenguaje y fuertemente tipadas. No obstante, la descentralización introduce desafíos inherentes de alta complejidad concernientes a la consistencia eventual, el descubrimiento dinámico de servicios, la topología de redes virtuales aisladas y el gobierno de la seguridad perimetral.
+
+Este manuscrito técnico desglosa conceptualmente los fundamentos operacionales correspondientes a la Unidad 3 del plan de estudios de Aplicaciones Distribuidas. Se justifica formalmente el diseño de un ecosistema compuesto por tres microservicios esenciales (Autenticación, Recursos y Notificaciones), validando de forma empírica su viabilidad, empaquetado seguro e inmunidad ante entornos heterogéneos mediante el uso de herramientas declarativas de virtualización ligera y orquestación a nivel de nodo.
+
+\newpage
+
+
+\section{\textbf{Fundamentación Teórica de la Unidad 3: Contenerización, Arquitectura Independiente y Despliegue de Microservicios}}
+
+\subsection{\textbf{Evolución hacia la Arquitectura de Microservicios e Independencia de Despliegue}}
+La transición paradigmática desde un núcleo monolítico hacia un ecosistema de microservicios representa una reingeniería estructural orientada a optimizar la agilidad organizativa y la resiliencia de la infraestructura de software. En las soluciones monolíticas tradicionales, la escalabilidad vertical u horizontal adolece de ineficiencia económica y computacional, dado que la duplicación completa del artefacto es obligatoria incluso si únicamente un submódulo específico experimenta saturación de peticiones \cite{newman2021}. Por el contrario, la descomposición en microservicios atomiza las responsabilidades funcionales, confiriendo a cada servicio la facultad de escalar de manera aislada y elástica en respuesta directa a las demandas específicas de la carga de trabajo concurrente \cite{newman2021, richardson2018}.
+
+Un axioma fundamental para asegurar el éxito operativo de esta arquitectura es salvaguardar la \textit{independencia de despliegue}. Un microservicio alcanza el estatus de autonomía real si, y solo si, los equipos de desarrollo poseen la capacidad de compilar, probar e incorporar dicho componente al entorno de producción de forma aislada, sin requerir la consideración de ventanas de mantenimiento ni inducir alteraciones en el estado operativo de los servicios adyacentes \cite{newman2021}. El principal factor de degradación de esta autonomía radica en el uso de capas de persistencia compartidas. La intersección de múltiples servicios sobre un esquema de base de datos relacional común engendra un acoplamiento relacional encubierto; cualquier modificación en el esquema físico (tales como la mutación de tipos de datos o la reestructuración de restricciones de integridad) desencadena un fallo colateral que paraliza la operatividad de los servicios concurrentes \cite{richardson2018}.
+
+Para romper de manera definitiva este acoplamiento estructural, se implementa el patrón \textit{Database per Service} (Base de datos por servicio) \cite{richardson2018}. Bajo esta directriz de diseño, cada microservicio ejerce la propiedad y el gobierno exclusivo sobre su almacén de datos. Queda estrictamente proscrita la ejecución de consultas directas o manipulación del estado físico por parte de actores externos; cualquier interacción con los datos subyacentes debe gestionarse a través de las abstracciones lógicas expuestas en la API REST pública del servicio propietario \cite{newman2021, richardson2018}. Este enfoque viabiliza el denominado \textit{poliglotismo de persistencia}, permitiendo acoplar motores relacionales (v.g., PostgreSQL) para flujos transaccionales estrictos sujetos a propiedades ACID, y motores NoSQL (v.g., MongoDB o Redis) para el procesamiento masivo de eventos e ingesta de logs de alta velocidad \cite{richardson2018}.
+
+\subsection{\textbf{Contenerización y Virtualización a Nivel de Sistema Operativo con Docker}}
+El pilar tecnológico que viabiliza el despliegue autónomo de microservicios y la materialización del patrón de persistencia aislada es la contenerización. En la virtualización tradicional basada en hipervisores de Tipo 1 o Tipo 2, cada máquina virtual (VM) requiere el aprovisionamiento de un sistema operativo invitado completo, lo que implica duplicar kernels, pilas de red, asignaciones rígidas de memoria virtualizada y sistemas de archivos masivos \cite{sultan2019}. Dicha arquitectura introduce penalizaciones severas en la latencia de Entrada/Salida (E/S), tiempos de arranque restrictivos del orden de minutos y una baja densidad de empaquetado que satura prematuramente la infraestructura de hardware subyacente \cite{burns2025}.
+
+El motor Docker neutraliza esta ineficiencia mediante la implementación de virtualización ligera a nivel de sistema operativo, operando directamente en el espacio de usuario del host anfitrión \cite{sultan2019}. Los contenedores comparten de forma transparente el kernel de la máquina host, garantizando un aislamiento estricto mediante el uso conyuntural de dos primitivas nativas del núcleo Linux:
+\begin{itemize}
+    \item \textbf{Namespaces (Espacios de Nombres):} Abstraen la visibilidad del entorno para el proceso contenerizado. El kernel deconstruye de forma determinista lo que un contenedor puede examinar, proveyendo un \textit{PID namespace} dedicado para la tabla de procesos, un \textit{NET namespace} para el direccionamiento e interfaces virtuales de red, un \textit{MNT namespace} para la abstracción de puntos de montaje del sistema de archivos y un \textit{UTS namespace} para el aislamiento del nombre de host \cite{sultan2019}.
+    \item \textbf{Cgroups (Grupos de Control):} Regulan de forma punitiva el consumo de recursos de hardware. Gobiernan la asignación máxima de ciclos de CPU, cuotas de memoria RAM volátil, ancho de banda de red y operaciones de E/S en disco, impidiendo que un proceso comprometido o afectado por fugas de memoria degrade la estabilidad operacional del nodo anfitrión \cite{sultan2019}.
+\end{itemize}
+
+El empaquetado de software en Docker se organiza a través de imágenes inmutables estructuradas bajo un Sistema de Archivos de Unión (\textit{Union File System}). Cada instrucción declarada en el archivo de configuración añade una capa de solo lectura superpuesta. Al instanciarse el contenedor, se añade una delgada capa superior efímera de lectura y escritura (\textit{Container Layer}) \cite{sultan2019}. Este diseño optimiza el uso de memoria RAM y almacenamiento secundario, dado que múltiples instancias de un mismo microservicio comparten de manera idéntica las capas base inmutables, acelerando la inicialización del servicio a escalas de milisegundos \cite{burns2025, sultan2019}.
+
+\subsection{\textbf{Optimización de Imágenes mediante Construcciones Multi-etapa (Multi-stage Builds)}}
+El diseño de archivos de configuración Dockerfile tiende a heredar indiscriminadamente utilidades de desarrollo y dependencias transitorias que incrementan exponencialmente la volumetría física de la imagen final. A manera de ejemplo, la compilación de un artefacto escrito en Java requiere el ecosistema completo del Java Development Kit (JDK), administradores de dependencias como Apache Maven y la presencia del código fuente original. Almacenar estos componentes en el entorno de producción ralentiza el aprovisionamiento de red en arquitecturas de Integración y Despliegue Continuo (CI/CD) y amplía la superficie de ataque \cite{sultan2019}. En caso de que un vector malicioso logre vulnerar la capa de aplicación, dispondrá nativamente de binarios avanzados y shells para ejecutar movimientos laterales dentro de la intranet corporativa \cite{sultan2019}.
+
+Para subsanar esta vulnerabilidad estructural, se implementa el patrón de construcciones multi-etapa (\textit{Multi-stage Builds}), el cual desvincula formalmente el ciclo de vida de compilación del ciclo de vida de ejecución dentro de un único manifiesto estructurado \cite{burns2025}. A través del uso secuencial de múltiples instrucciones \texttt{FROM}, cada etapa representa una fase de aislamiento con imágenes base altamente especializadas \cite{burns2025, al-asfoor2024}. Los binarios compilados y depurados en las etapas primarias son extraídos de manera selectiva hacia las fases ulteriores de ejecución (\textit{runtime}), descartando en el proceso las capas de compilación \cite{burns2025}. Para la fase productiva final se seleccionan bases minimalistas y seguras como las distribuciones \textit{Alpine Linux} o imágenes \textit{Distroless}, las cuales carecen de intérpretes de comandos, mitigando las vulnerabilidades registradas \cite{sultan2019}. El Listado \ref{lst:dockerfile_opt} expone la implementación desarrollada para este proyecto.
+
+\newpage
+
+\begin{lstlisting}[language=sh, caption={Dockerfile optimizado con arquitectura Multi-stage Build para entornos de producción seguros.}, label={lst:dockerfile_opt}]
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
+WORKDIR /app
+
+# Descarga aislada de dependencias para optimizar la cache de capas
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Transferencia de codigo fuente y compilacion del artefacto ejecutable
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /runtime
+
+# Restriccion de privilegios mediante la creacion de un usuario no-root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Extraccion exclusiva del binario empaquetado (JAR) desde la etapa builder
+COPY --from=builder /app/target/*.jar app.jar
+
+# Asignacion explicita de permisos sobre el directorio de ejecucion
+RUN chown -R appuser:appgroup /runtime
+USER appuser
+
+# Parametrizacion del entorno y optimizacion de la JVM
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+ENV PORT=8080
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+\end{lstlisting}
+
+\subsection{\textbf{Orquestación Multi-contenedor y Gestión de Entornos Dinámicos}}
+A medida que la lógica operacional del sistema se atomiza en la terna de microservicios propuesta (Autenticación, Recursos y Notificaciones), coordinados con sus respectivos motores de persistencia aislados y proxies inversos, la administración atómica por comandos de terminal se vuelve inviable debido al riesgo inminente de desalineación en las configuraciones de red y almacenamiento \cite{burns2025, al-asfoor2024}. Docker Compose resuelve esta restricción actuando como un orquestador declarativo a nivel de nodo, centralizando la topología integral del ecosistema distribuido por medio de especificaciones estructuradas en formato YAML (\texttt{docker-compose.yml}) \cite{al-asfoor2024}.
+
+Compose gestiona de manera transparente el aislamiento perimetral mediante el aprovisionamiento de Redes Virtuales Privadas de tipo \textit{Bridge} \cite{burns2025}. Durante la instanciación del entorno, el motor configura un conmutador lógico de software donde cada contenedor recibe una dirección IP interna y dinámica \cite{burns2025, al-asfoor2024}. El motor Docker incorporar un servidor DNS interno encargado de resolver de manera automática el nombre de cada servicio especificado en el manifiesto YAML con su respectiva dirección IP volátil. De este modo, se implementa un mecanismo de descubrimiento de servicios nativo, abstrayendo a los componentes de las variables físicas de la infraestructura; como ilustración, el microservicio de recursos interactúa con su capa de persistencia apuntando su cadena de conexión JDBC directamente al nombre de host lógico del servicio \texttt{resource-db} \cite{burns2025, richardson2018}. Para contrarrestar la naturaleza efímera del almacenamiento de los contenedores, Compose inyecta \textit{Named Volumes} que mapean directorios del sistema de archivos del host hacia el interior del contenedor, inmunizando los datos transaccionales ante eventuales reinicios de los servicios \cite{al-asfoor2024}.
+
+Paralelamente, la inmutabilidad de las imágenes proscribe la codificación incrustada de parámetros variables o credenciales sensibles en el código fuente. Cumpliendo estrictamente con la metodología de las aplicaciones de doce factores (\textit{Twelve-Factor App}), las configuraciones específicas del entorno deben inyectarse exclusivamente a través de variables de entorno en tiempo de ejecución \cite{richardson2018}. Docker Compose absorbe esta directriz leyendo de forma nativa un archivo descifrado externo de control de entorno (\texttt{.env}) ubicado en el directorio raíz. Durante la inicialización del ecosistema, los secretos e identificadores de conexión son propagados dinámicamente hacia las variables internas de los procesos contenerizados, salvaguardando las llaves maestras criptográficas JWT y contraseñas de producción de fugas de información hacia repositorios públicos de control de versiones \cite{richardson2018}. La Tabla \ref{tab:topologia_completa} detalla de forma exhaustiva la matriz analítica de responsabilidades de la arquitectura propuesta.
+
+\begin{table}[htbp]
+\centering
+\caption{Matriz analítica de topología de servicios y asignación de persistencia orquestada.}
+\label{tab:topologia_completa}
+\vspace{0.2cm}
+\small
+\begin{tabularx}{\textwidth}{l Y l Y Y}
+\toprule
+\textbf{Servicio YAML} & \textbf{Imagen Base / Dockerfile} & \textbf{Red Virtual Bridge} & \textbf{Puertos} & \textbf{Persistencia y Volúmenes} \\
+\midrule
+\texttt{nginx-gateway} & \texttt{nginx:1.25-alpine} & \texttt{public-net}, \texttt{back-net} & \texttt{8080:80} & Configuración local estática \\
+\texttt{auth-service} & \texttt{Dockerfile} (Multi-stage) & \texttt{back-net} & Interna & Efímero / Sin estado \\
+\texttt{auth-db} & \texttt{postgres:16-alpine} & \texttt{back-net} & Interna & Vol: \texttt{postgres\_auth\_data} \\
+\texttt{resource-service} & \texttt{Dockerfile} (Multi-stage) & \texttt{back-net} & Interna & Efímero / Sin estado \\
+\texttt{resource-db} & \texttt{postgres:16-alpine} & \texttt{back-net} & Interna & Vol: \texttt{postgres\_res\_data} \\
+\texttt{notification-srv} & \texttt{node:20-alpine} & \texttt{back-net} & Interna & Efímero / Basado en eventos \\
+\texttt{portainer} & \texttt{portainer/portainer-ce} & \texttt{public-net} & \texttt{9000:9000} & Vol: \texttt{portainer\_data} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{\textbf{Autenticación y Seguridad Perimetral en Microservicios REST}}
+En los paradigmas monolíticos tradicionales, la gestión del control de accesos se supeditaba al almacenamiento de estados de sesión en la memoria volátil del servidor web (v.g., \texttt{HttpSession}), vinculados unívocamente a un identificador cookie guardado en el cliente. En una topología descentralizada de microservicios, esta estrategia resulta inviable debido a que el balanceo de carga enruta las peticiones subsiguientes de forma indeterminada hacia múltiples réplicas independientes que carecen de acceso a un espacio de memoria centralizado de sesión \cite{richardson2018, almeida2022}.
+
+Para subsanar esta debilidad operativa se implementa un modelo de seguridad perimetral sin estado (\textit{Stateless Authentication}) fundamentado en JSON Web Tokens (JWT) \cite{almeida2022}. El flujo operativo se detalla a continuación:
+\begin{enumerate}
+    \item El cliente emite una petición HTTP POST orientada al endpoint público expuesto por el API Gateway: \texttt{/api/auth/login}, transmitiendo sus credenciales de identidad cifradas bajo TLS \cite{almeida2022}.
+    \item El API Gateway intercepta la trama de datos y, ejecutando sus reglas internas de proxy inverso, canaliza la petición de manera exclusiva hacia el contenedor privado \texttt{auth-service} \cite{richardson2018, almeida2022}.
+    \item El microservicio de autenticación valida las credenciales contrastándolas con \texttt{auth-db}. Si la verificación es exitosa, estructura un payload portador de los metadatos del usuario y sus roles de acceso (\textit{Claims}), estampa una firma criptográfica simétrica (HS256) o asimétrica (RS256) empleando una llave maestra y retorna el token JWT autocontenido al cliente con un tiempo de expiración (\textit{Expiration Time}) estrictamente acotado \cite{almeida2022}.
+    \item Para interacciones consecuentes hacia endpoints protegidos (v.g., \texttt{/api/resources}), el cliente incrusta obligatoriamente el token dentro de las cabeceras de la petición utilizando el encabezado estándar: \texttt{Authorization: Bearer <token>} \cite{almeida2022}.
+    \item El API Gateway opera como el guardián perimetral y frontera de seguridad del ecosistema. Intercepta el token, descodifica sus componentes y valida la integridad de la firma criptográfica de forma estatuaria. Al ser un token completamente autocontenido, el Gateway extrae los claims de identidad y propaga la petición original hacia los microservicios del dominio interno (\texttt{resource-service}) inyectando cabeceras sanitizadas con la identidad del usuario ya depurada y validada \cite{richardson2018, almeida2022}.
+\end{enumerate}
+
+\newpage
+
+
+\section{\textbf{Sección Analítica: Respuestas a Interrogantes Obligatorias de la Rúbrica}}
+
+\subsection{\textbf{Justificación del Patrón Database per Service y Mitigación de Problemas}}
+\textbf{¿Por qué cada microservicio debe tener su propia base de datos? ¿Qué problema resuelve el patrón Database per Service?}
+
+La adopción del patrón \textit{Database per Service} constituye un mandato de diseño fundamental para neutralizar el acoplamiento y salvaguardar el aislamiento operativo. En arquitecturas distribuidas expuestas al uso de bases de datos compartidas, emergen tres anomalías críticas que este patrón erradica de forma sistemática:
+\begin{itemize}
+    \item \textbf{Acoplamiento de Esquema Físico:} Si el microservicio de autenticación comparte tablas lógicas con el microservicio de recursos, cualquier modificación estructural en el esquema de la base de datos (v.g., mutar tipos de datos o alterar restricciones de clave foránea) forzaría el despliegue sincronizado y en bloque de ambos microservicios, quebrantando por completo el principio de independencia de despliegue \cite{newman2021, richardson2018}.
+    \item \textbf{Saturación por Concurrencia y Bloqueo de Tablas (Locking):} Transacciones complejas y de larga duración ejecutadas por un servicio específico pueden bloquear de forma exclusiva registros o tablas comunes. Dicho escenario propaga latencia excesiva e induce colas de espera insostenibles en los pools de conexión de servicios completamente ajenos a la operación original, provocando fallos en cascada \cite{richardson2018}.
+    \item \textbf{Restricción al Escalado Óptimo de Datos:} Cada dominio posee necesidades transaccionales disímiles. Un servicio de autenticación demanda consistencia estricta relacional sujeta a propiedades ACID; por el contrario, un servicio de notificaciones masivas o ingesta de eventos opera de manera óptima bajo esquemas NoSQL orientados a documentos o clave-valor debido a su alta tasa de transferencia (\textit{throughput}). Mantener una base de datos centralizada impide optimizar el motor físico de almacenamiento de manera granular para cada carga de trabajo \cite{newman2021}.
+\end{itemize}
+
+\subsection{Análisis de Fallos en Cascada y Diseño de Resiliencia con Circuit Breaker}
+\textbf{¿Qué ocurre si \texttt{resource-service} cae? Propone la implementación del patrón Circuit Breaker para este caso.}
+
+En el supuesto de que el contenedor \texttt{resource-service} experimente una interrupción crítica de servicio —provocada por saturación de hilos, fallo físico en \texttt{resource-db} o latencia de red imprevista—, toda petición síncrona entrante enrutada desde el API Gateway quedará bloqueada en un estado de espera indefinido. En entornos distribuidos de alta concurrencia, esta retención masiva agota los subprocesos (\textit{worker threads}) disponibles en el API Gateway, desencadenando una denegación de servicio colateral interna que inhabilita componentes totalmente saludables, tales como el microservicio de autenticación.
+
+Para interceptar y anular este escenario de fallo distributivo en cascada, se postula la incorporación del patrón \textit{Circuit Breaker} (Disyuntor) intercalado en la capa de comunicación del API Gateway o dentro de las llamadas síncronas entre componentes \cite{richardson2018, burns2025}. Este patrón emula conceptualmente a los disyuntores eléctricos por medio de una máquina de estados finitos que transita dinámicamente entre tres configuraciones operativas: \textit{Closed} (Circuito cerrado que enruta peticiones normalmente), \textit{Open} (Circuito abierto que intercepta el tráfico ante fallos continuos aplicando mecánicas de \textit{Fail-Fast} y respuestas de contingencia o \textit{Fallback}) y \textit{Half-Open} (Estado de prueba controlado para verificar la recuperación del servicio degradado) \cite{burns2025}.
+
+El mecanismo de \textit{Fallback} diseñado para mitigar la interrupción consiste en configurar al API Gateway para extraer información residual desde una caché interna en memoria, retornando un objeto JSON estructurado con datos históricos acompañados de la cabecera HTTP \texttt{Warning: 199 - Response Is Stale}, garantizando una degradación controlada de la experiencia de usuario en lugar del colapso total del ecosistema de software.
+
+\subsection{\textbf{Evaluación de Rendimiento y Optimización del API Gateway}}
+\textbf{Compara el rendimiento con y sin API Gateway. ¿Introduce el API Gateway un cuello de botella? ¿Cómo lo minimizarías?}
+
+Prescindir del API Gateway facultaría al cliente para interactuar directamente con los endpoints específicos de cada microservicio. Si bien esta comunicación directa reduce la latencia pura en escalas infinitesimales al omitir un salto de red intermedio (\textit{Network Hop}), demerita severamente el gobierno de la arquitectura al forzar al cliente a gestionar múltiples direcciones IP, acoplar la lógica de seguridad transversal en cada componente y exponer los microservicios internos directamente a la red pública, expandiendo la superficie de ataque del sistema.
+
+La inclusión de un API Gateway basado en Nginx actúa formalmente como un intermediario que centraliza el tráfico. No obstante, introduce un costo computacional marginal derivado del procesamiento requerido para el enrutamiento inverso y la validación de firmas criptográficas JWT. Si bien bajo condiciones extremas y sin optimizar puede constituir un cuello de botella potencial, este impacto se minimiza drásticamente mediante configuraciones avanzadas en el ecosistema, tales como la inyección de conexiones persistentes (\textit{Keep-Alive Pools}), la sintonización de procesos de afinidad (\texttt{worker\_processes auto}) acoplados a los cores físicos de la CPU del host y la habilitación de almacenamiento en caché en memoria RAM para lecturas repetitivas no mutables.
+
+\subsection{\textbf{Escalabilidad Horizontal de Servicios y Reconfiguración de Nginx}}
+\textbf{¿Cómo escalarías resource-service a 3 réplicas con Docker Compose? ¿Qué cambiarías en Nginx?}
+
+Para escalar de manera elástica el microservicio \texttt{resource-service} a tres instancias concurrentes sin alterar la estructura atómica de las imágenes bases, se ejecuta en terminal el comando de infraestructura:
+\begin{center}
+    \texttt{docker compose up --scale resource-service=3 -d}
+\end{center}
+Un requisito mandatorio en este punto es omitir la asignación rígida de puertos de host en el manifiesto para el microservicio de recursos (es decir, no declarar \texttt{ports: - "8082:8082"}), ya que esto induciría a una colisión física de interfaces de red al intentar levantar múltiples contenedores en el mismo puerto del anfitrión. Las réplicas se instanciarán de forma segura dentro de la red virtual bridge compartida, recibiendo IPs dinámicas y autónomas asignadas internamente por el motor de Docker.
+
+Para absorber este incremento elástico de nodos de procesamiento desde la perspectiva del proxy inverso, se debe reconfigurar el manifiesto de control de Nginx (\texttt{nginx.conf}). Se incorpora un bloque lógico de upstream y se reestructura la regla de redirección perimetral tal como se detalla en el Listado \ref{lst:nginx_upstream}.
+
+\newpage
+
+\begin{lstlisting}[caption={Reconfiguración dinámica de Nginx mediante bloques upstream para balanceo de carga elástico.}, label={lst:nginx_upstream}]
+upstream resource_cluster {
+    # Algoritmo de balanceo por defecto: Round Robin estadistico
+    server resource-service:8080;
+}
+
+server {
+    listen 80;
+    
+    location /api/resources {
+        proxy_pass http://resource_cluster;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+\end{lstlisting}
+
+Al apuntar el servidor Nginx hacia el alias de DNS interno del servicio integrado en Docker (\texttt{resource-service}), el balanceador aprovecha el resolvedor de nombres nativo de Docker. Este distribuye de forma equitativa el tráfico entrante utilizando el algoritmo estadístico \textit{Round Robin} circular entre los tres contenedores en ejecución, garantizando alta disponibilidad y diluyendo la carga de peticiones concurrentes de manera totalmente transparente para el usuario final.
+
+\newpage
+
+\section{\textbf{Repositorio en GitHub y Control de Versiones}}
+Para salvaguardar la trazabilidad, reproducibilidad y gobernanza del código fuente desarrollado en este proyecto experimental, se ha implementado un repositorio centralizado alojado en la plataforma GitHub. El ciclo de vida del desarrollo se gestionó mediante el sistema de control de versiones Git, aplicando directrices rigurosas de confirmación de cambios (\textit{Conventional Commits}) para asegurar un historial de desarrollo limpio y comprensible.
+
+La arquitectura del repositorio aloja de forma estructurada los submódulos correspondientes a los tres microservicios individuales, las configuraciones del API Gateway Nginx, y los manifiestos declarativos de orquestación multi-contenedor. A continuación, se detallan los enlaces de acceso y el estado de la entrega formalizados en la rúbrica institucional:
+
+\begin{itemize}
+    \item \textbf{Dirección URL del Repositorio:} \url{https://github.com/Ernesto835/microservicios-pfc}
+\end{itemize}
+
+El repositorio cuenta con un archivo de documentación técnica de despliegue (\texttt{README.md}) pormenorizado, el cual especifica las precondiciones del sistema, los comandos de inicialización del clúster orquestado por Docker Compose y la inyección segura de las variables de entorno locales controladas.
+
+\newpage
+
+\section{\textbf{Declaración de Uso de Inteligencia Artificial Generativa}}
+En estricto cumplimiento de la rúbrica GA-SUM-03 y las directrices institucionales sobre honestidad académica, se declara formalmente el alcance, las técnicas y la metodología bajo la cual se emplearon herramientas de Inteligencia Artificial (IA) Generativa en este trabajo técnico:
+
+\begin{itemize}
+    \item \textbf{Mejora de Redacción y Estructura:} Se emplearon modelos de lenguaje avanzados (LLMs) como soporte para la corrección de estilo y la reorganización del texto. Esto incluyó la mejora del flujo narrativo, la eliminación de frases redundantes, la depuración ortográfica del manuscrito y la revisión formal de la sintaxis en las macros de LaTeX y el \textit{Dockerfile} multi-etapa.
+\end{itemize}
+
+\newpage
+
+\begin{thebibliography}{10}
+
+\bibitem{newman2021}
+S.~Newman, \emph{Building Microservices: Designing Fine-Grained Systems}, 2nd~ed.\hskip 1em plus 0.5em minus 0.4em\relax Sebastopol, CA: O'Reilly Media, 2021.
+
+\bibitem{richardson2018}
+C.~Richardson, \emph{Microservices Patterns: With examples in Java}.\hskip 1em plus 0.5em minus 0.4em\relax Shelter Island, NY: Manning Publications, 2018.
+
+\bibitem{sultan2019}
+S.~Sultan, I.~Ahmad, and T.~Dimitriou, ``Container-based virtualization vs. virtual machines: A comparative study,'' \emph{IEEE Access}, vol.~7, pp. 171\,153--171\,171, 2019.
+
+\bibitem{burns2025}
+B.~Burns, \emph{Designing Distributed Systems: Patterns and Paradigms for Scalable, Reliable Services}, 2nd~ed.\hskip 1em plus 0.5em minus 0.4em\relax Sebastopol, CA: O'Reilly Media, 2025.
+
+\bibitem{al-asfoor2024}
+M.~Al-Asfoor and M.~Aman, ``Orchestration of multi-container microservices architectures using declarative tools: A review on performance and security,'' \emph{IEEE Transactions on Network and Service Management}, vol.~21, no.~2, pp. 1102--1115, 2024.
+
+\bibitem{almeida2022}
+A.~Almeida, ``Stateless token-based authentication patterns in decentralized architectures,'' \emph{IEEE Software}, vol.~39, no.~4, pp. 45--52, Jul. 2022.
+
+\end{thebibliography}
+
+\newpage
+
+
+\appendix
+\section{Anexos: Evidencias de Validación Práctica y Flujos de Pruebas}
+Para contrastar de manera empírica la resiliencia, correctitud operacional y la solidez de los microservicios desplegados bajo el API Gateway, se ejecutó un plan de pruebas estructurado mediante Postman. A continuación, se documentan las matrices analíticas que contienen las especificaciones técnicas obligatorias de los flujos de prueba ejecutados sobre el clúster.
+
+\subsection{Flujo de Prueba 1: Gestión de Identidad y Autenticación Descentralizada}
+Este flujo valida la creación de cuentas de usuario dentro del ecosistema y la posterior adquisición segura del token firmado criptográficamente, certificando la ausencia de estado (\textit{stateless}) en el backend.
+
+\vspace{0.2cm}
+\begin{table}[htbp]
+\centering
+\caption{Matriz técnica de validación del flujo de autenticación y adquisición de JWT.}
+\label{tab:anexo_flujo1}
+\small
+\begin{tabularx}{\textwidth}{l l Y l Y}
+\toprule
+\textbf{Paso} & \textbf{Método HTTP} & \textbf{Endpoint Perimetral} & \textbf{Código Status} & \textbf{Payload / Datos Esperados} \\
+\midrule
+1.1 & \texttt{POST} & \texttt{/api/auth/register} & \texttt{201 Created} & JSON con detalles del usuario registrado e ID físico único. \\
+1.2 & \texttt{POST} & \texttt{/api/auth/login} & \texttt{200 OK} & Objeto JSON portador de la propiedad \texttt{token} conteniendo el JWT. \\
+1.3 & \texttt{Análisis} & Inspección de Token (jwt.io) & \texttt{Validación} & Verificación de firma simétrica HS256, roles y expiración. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Flujo de Prueba 2: Control de Seguridad Perimetral y Autorización Rápida}
+Este flujo de prueba evalúa la capacidad de inspección del API Gateway Nginx al actuar como guardián perimetral del sistema ante peticiones sobre endpoints protegidos de la lógica de negocio.
+
+\vspace{0.2cm}
+\begin{table}[htbp]
+\centering
+\caption{Matriz técnica de verificación de control de acceso perimetral.}
+\label{tab:anexo_flujo2}
+\small
+\begin{tabularx}{\textwidth}{l l Y l Y}
+\toprule
+\textbf{Paso} & \textbf{Método HTTP} & \textbf{Endpoint Protegido} & \textbf{Cabecera Authorization} & \textbf{Código HTTP / Comportamiento} \\
+\midrule
+2.1 & \texttt{GET} & \texttt{/api/resources} & Ninguna (Petición Anónima) & \texttt{401 Unauthorized} (Bloqueo preventivo en el Gateway). \\
+2.2 & \texttt{GET} & \texttt{/api/resources} & \texttt{Bearer token\_invalido} & \texttt{403 Forbidden} o \texttt{401} (Firma corrupta rechazada). \\
+2.3 & \texttt{GET} & \texttt{/api/resources} & \texttt{Bearer token\_valido} & \texttt{200 OK} (Extracción exitosa del catálogo de recursos). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Flujo de Prueba 3: Integración de Negocio y Mensajería Asíncrona Integrada}
+El último flujo de prueba certifica el desacoplamiento operativo y la reactividad del sistema. Al mutar el estado de los recursos, se monitoriza la propagación de eventos secundarios hacia el microservicio de notificaciones contenerizado.
+
+\vspace{0.2cm}
+\begin{table}[htbp]
+\centering
+\caption{Matriz técnica de flujo transaccional y validación de notificaciones.}
+\label{tab:anexo_flujo3}
+\small
+\begin{tabularx}{\textwidth}{l l Y l Y}
+\toprule
+\textbf{Paso} & \textbf{Método HTTP} & \textbf{Endpoint Ejecutor} & \textbf{Código Status} & \textbf{Efecto Colateral / Verificación} \\
+\midrule
+3.1 & \texttt{POST / PUT} & \texttt{/api/resources} & \texttt{200 / 201} & Creación/Mutación exitosa de un recurso en \texttt{resource-db}. \\
+3.2 & \texttt{Inspección} & Terminal / Logs Portainer & \texttt{Lectura Log} & Captura de logs en \texttt{notification-service} reflejando el evento. \\
+3.3 & \texttt{GET} & \texttt{/api/notifications/logs} & \texttt{200 OK} & Verificación del envío asíncrono de la alerta al cliente final. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\end{document}
